@@ -24,21 +24,18 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-# from store.models import StoreModel
-# from store.serializers import (
-#     OnlyStoreInfoSerializer,
-# )
+from company.models import Company
+from company.serializers import (
+    OnlyCompanyInforSerializer,
+)
 from .form import UserForm
 from .models import CheckEmail, UserModel
 from .serializers import (
     UserSerializer,
     LoginSerializer,
-    # SellerSerializer,
+    CompanySerializer,
     PostUserSerializer,
     GetUserSerializer,
-    AdminUserSerializer,
-    ClientUserSerializer,
-    # SellerUserSerializer,
 )
 from django.shortcuts import render
 import smtplib
@@ -182,24 +179,24 @@ class SignupView(APIView):
                 if category != "2":
                     code_obj.delete()  # Delete email verification code
                     serializer.save()
-                # if category == "2":
-                #     name = request.data.get("name")
-                #     address = request.data.get("address")
-                #     if not name or not address:
-                #         return Response(
-                #             {"message": "Please enter all required information."},
-                #             status.HTTP_400_BAD_REQUEST,
-                #         )
-                #     sell_serializer = SellerSerializer(data=request.data)
-                #     code_obj.delete()  # Delete email verification code
-                #     if sell_serializer.is_valid():
-                #         serializer.save(is_seller=True)
-                #         sell_serializer.save(seller_id=serializer.data.get("id"))
-                #     else:
-                #         return Response(
-                #             {"message": f"{serializer.errors}"},
-                #             status=status.HTTP_400_BAD_REQUEST,
-                #         )
+                if category == "2":
+                    name = request.data.get("name")
+                    address = request.data.get("address")
+                    if not name or not address:
+                        return Response(
+                            {"message": "Please enter all required information."},
+                            status.HTTP_400_BAD_REQUEST,
+                        )
+                    company_serializer = CompanySerializer(data=request.data)
+                    code_obj.delete()  # Delete email verification code
+                    if company_serializer.is_valid():
+                        serializer.save(is_client=True)
+                        company_serializer.save(user_id=serializer.data.get("id"))
+                    else:
+                        return Response(
+                            {"message": "Error, please check your data and try agin!"},
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
 
                 return Response(
                     {"message": "Your registration has been completed."},
@@ -207,177 +204,62 @@ class SignupView(APIView):
                 )
             else:
                 return Response(
-                    {"message": f"{serializer.errors}"},
+                    {"message": "Error, please check your data and try agin!"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
 
-# ===== Manage Admin user =====
-class CreateSuperuserView(APIView):
-    serializer_class = UserSerializer
 
-    def post(self, request, format=None):
-        email = request.data.get("email")
-        # Check for email duplicates
-        user = UserModel.objects.filter(email=email)
-        if user.exists():
+class CompanySignup(APIView):
+    def post(self, request):
+        with transaction.atomic():
+            user_id = request.data.get("user_id")
+            name = request.data.get("name")
+            address = request.data.get("address")
+            user = UserModel.objects.get(id=user_id)
+            if not name or not address:
+                return Response(
+                    {"message": "Please enter all required information."},
+                    status.HTTP_400_BAD_REQUEST,
+                )
+            if user.is_client and not user.is_admin:
+                return Response(
+                    {"message": "You are already registered as a client."},
+                    status.HTTP_400_BAD_REQUEST,
+                )
+
+            serializer = CompanySerializer(data=request.data)
+
+            if serializer.is_valid():
+                serializer.save(user_id=user_id)
+                try:
+                    user.is_client = True
+                    if not user.name:
+                        user.name = name
+                    user.save()
+                except Exception as e:
+                    return Response(
+                        {"message": str(e)}, status=status.HTTP_400_BAD_REQUEST
+                    )
+
+                return Response(
+                    data={
+                        "user_id": user.id,
+                        "company_id": serializer.data.get("id"),
+                        "user_name": user.name,
+                        "origin_company_name": serializer.data.get("name"),
+                        "email": user.email if user.email else False,
+                        "image": (
+                            user.profile_image.url if user.profile_image else False
+                        ),
+                    },
+                    status=200,
+                )
             return Response(
-                {"message": "The email already exists."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        serializer = self.serializer_class(data=request.data)
-
-        if serializer.is_valid():
-            serializer.save(is_admin=True, is_seller=False)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-class ListAdminUsersView(APIView):
-    serializer_class = AdminUserSerializer
-
-    def get(self, request, format=None):
-        admin_users = UserModel.objects.filter(is_admin=True).order_by("-id")
-        serializer = self.serializer_class(admin_users, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-class GetAdminUserByIdView(APIView):
-    serializer_class = AdminUserSerializer
-
-    def get(self, request, user_id, format=None):
-        try:
-            user = UserModel.objects.get(id=user_id, is_admin=True)
-            serializer = self.serializer_class(user)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except UserModel.DoesNotExist:
-            return Response(
-                {"message": "Admin user not found"}, status=status.HTTP_404_NOT_FOUND
-            )
-
-
-class DeleteAdminUserView(APIView):
-    serializer_class = AdminUserSerializer
-
-    def delete(self, request, user_id, format=None):
-        try:
-            user = UserModel.objects.get(id=user_id, is_admin=True)
-            user.delete()
-            return Response(
-                {"message": "Admin user deleted successfully"},
-                status=status.HTTP_204_NO_CONTENT,
-            )
-        except UserModel.DoesNotExist:
-            return Response(
-                {"message": "Admin user not found"}, status=status.HTTP_404_NOT_FOUND
+                {"message": "A problem has occurred."}, status.HTTP_400_BAD_REQUEST
             )
 
 
-class UpdateAdminUserView(APIView):
-    serializer_class = AdminUserSerializer
-
-    def put(self, request, user_id, format=None):
-        try:
-            user = UserModel.objects.get(id=user_id, is_admin=True)
-        except UserModel.DoesNotExist:
-            return Response(
-                {"message": "Admin user not found"}, status=status.HTTP_404_NOT_FOUND
-            )
-
-        serializer = self.serializer_class(user, data=request.data)
-
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-# ===== Manage Admin user =====
-class ListClientUsersView(APIView):
-    serializer_class = ClientUserSerializer
-
-    def get(self, request, format=None):
-        user = UserModel.objects.filter(
-            is_active=True, is_admin=False, is_seller=False
-        ).order_by("-id")
-        serializer = self.serializer_class(user, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-class GetClientUserByIdView(APIView):
-    serializer_class = ClientUserSerializer
-
-    def get(self, request, user_id, format=None):
-        try:
-            user = UserModel.objects.get(id=user_id, is_active=True)
-            serializer = self.serializer_class(user)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except UserModel.DoesNotExist:
-            return Response(
-                {"message": "Client user not found"}, status=status.HTTP_404_NOT_FOUND
-            )
-
-
-class DeleteClientUserView(APIView):
-    serializer_class = ClientUserSerializer
-
-    def delete(self, request, user_id, format=None):
-        try:
-            user = UserModel.objects.get(id=user_id, is_active=True)
-            user.delete()
-            return Response(
-                {"message": "Client user deleted successfully"},
-                status=status.HTTP_204_NO_CONTENT,
-            )
-        except UserModel.DoesNotExist:
-            return Response(
-                {"message": "Client user not found"}, status=status.HTTP_404_NOT_FOUND
-            )
-
-
-# class ListSellerUsersView(APIView):
-#     serializer_class = SellerUserSerializer
-
-#     def get(self, request, format=None):
-#         user = UserModel.objects.filter(
-#             is_active=True, is_admin=False, is_seller=True
-#         ).order_by("-id")
-#         serializer = self.serializer_class(user, many=True)
-#         return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-# class GetSellerUserByIdView(APIView):
-#     serializer_class = SellerUserSerializer
-
-#     def get(self, request, user_id, format=None):
-#         try:
-#             user = UserModel.objects.get(id=user_id, is_seller=True)
-#             serializer = self.serializer_class(user)
-#             return Response(serializer.data, status=status.HTTP_200_OK)
-#         except UserModel.DoesNotExist:
-#             return Response(
-#                 {"message": "Seller user not found"}, status=status.HTTP_404_NOT_FOUND
-#             )
-
-
-# class DeleteSellerUserView(APIView):
-#     serializer_class = SellerUserSerializer
-
-#     def delete(self, request, user_id, format=None):
-#         try:
-#             user = UserModel.objects.get(id=user_id, is_seller=True)
-#             user.delete()
-#             return Response(
-#                 {"message": "Seller user deleted successfully"},
-#                 status=status.HTTP_204_NO_CONTENT,
-#             )
-#         except UserModel.DoesNotExist:
-#             return Response(
-#                 {"message": "Seller not found"}, status=status.HTTP_404_NOT_FOUND
-#             )
 
 
 # log in
@@ -400,11 +282,16 @@ class LoginView(TokenObtainPairView):
         if serializer.is_valid():
             token = serializer.validated_data
             is_admin = user.is_admin
+            company = Company.objects.filter(user=user).first() # Use .first() to get the first object.
+            company_id = company.id if company else False
+            origin_company_name = company.name if company else False
             return Response(
                 data={
                     "token": token,
                     "user_id": user.id,
                     "is_admin": is_admin,
+                    "company_id": company_id,
+                    "origin_company_name": origin_company_name,
                     "user_name": user.name,
                     "email": user.email if user.email else False,
                     "image": user.profile_image.url if user.profile_image else False,
@@ -425,9 +312,9 @@ class UserView(APIView):
     def get(self, request):
         user = get_object_or_404(UserModel, email=request.user)
         data = {}
-        # if user.is_seller:
-        #     store = user.storemodel_set.all().first()
-        #     data["store_info"] = OnlyStoreInfoSerializer(store).data
+        if user.is_client:
+            comapny = user.company_set.all().first()
+            data["company_info"] = OnlyCompanyInforSerializer(comapny).data
 
         data["user_info"] = GetUserSerializer(user).data
         return Response(data, status=status.HTTP_200_OK)
@@ -580,6 +467,7 @@ class UserView(APIView):
             print(e)
             return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+
 class ChangeUserProfile(APIView):
     def patch(self, request):
         user = get_object_or_404(UserModel, id=request.user.id)
@@ -597,8 +485,6 @@ class ChangeUserProfile(APIView):
             },
             status=status.HTTP_200_OK,
         )
-
-
 
 
 class CheckToken(APIView):
@@ -669,3 +555,6 @@ class CurrentUserView(APIView):
     def get(self, request):
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
+
+
+# Admin mangement

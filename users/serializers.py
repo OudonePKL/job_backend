@@ -3,7 +3,7 @@ from rest_framework.serializers import ValidationError
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from users.models import UserModel
-# from store.models import StoreModel
+from company.models import Company
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -47,24 +47,6 @@ class UserSerializer(serializers.ModelSerializer):
         return instance
 
 
-class AdminUserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserModel
-        fields = ["id", "email", "name", "profile_image"]
-
-
-class ClientUserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserModel
-        fields = ["id", "email", "name", "profile_image"]
-
-
-class SellerUserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserModel
-        fields = ["id", "email", "name", "profile_image"]
-
-
 class GetUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserModel
@@ -82,37 +64,37 @@ class LoginSerializer(TokenObtainPairSerializer):
         return token
 
 
-# class SellerSerializer(serializers.ModelSerializer):
-#     def validate(self, attrs):
-#         name = attrs.get("name")
-#         phone = attrs.get("phone")
-#         introduce = attrs.get("introduce")
-#         if name:
-#             if len(name) > 15:
-#                 raise ValidationError(
-#                     "Please write your store name in 15 characters or less."
-#                 )
-#         if phone:
-#             if not phone.isdigit():
-#                 raise ValidationError(
-#                     "Please enter only numbers for your phone number!"
-#                 )
-#         if introduce:
-#             if len(introduce) > 300:
-#                 raise ValidationError(
-#                     "Please write your introduction in 300 characters or less."
-#                 )
-#         return attrs
+class CompanySerializer(serializers.ModelSerializer):
+    def validate(self, attrs):
+        name = attrs.get("name")
+        phone = attrs.get("phone")
+        introduce = attrs.get("introduce")
+        if name:
+            if len(name) > 15:
+                raise ValidationError(
+                    "Please write your comapy name in 15 characters or less."
+                )
+        if phone:
+            if not phone.isdigit():
+                raise ValidationError(
+                    "Please enter only numbers for your phone number!"
+                )
+        if introduce:
+            if len(introduce) > 300:
+                raise ValidationError(
+                    "Please write your introduction in 300 characters or less."
+                )
+        return attrs
 
-#     class Meta:
-#         model = StoreModel
-#         fields = "__all__"
+    class Meta:
+        model = Company
+        fields = "__all__"
 
-#         extra_kwargs = {
-#             "seller": {"required": False},
-#             "name": {"required": True},
-#             "address": {"required": True},
-#         }
+        extra_kwargs = {
+            "user": {"required": False},
+            "name": {"required": True},
+            "address": {"required": True},
+        }
 
 
 class PostUserSerializer(serializers.Serializer):

@@ -2,14 +2,30 @@ from rest_framework import generics, status, filters
 from rest_framework.response import Response
 from django.http import Http404
 from .models import Resume
-from .serializers import ResumeSerializer
+from .serializers import ResumeSerializer, ResumeCreateUpdateSerializer
 
 
-class ResumeListCreateAPIView(generics.ListCreateAPIView):
+class ResumeListAPIView(generics.ListAPIView):
     queryset = Resume.objects.all()
     serializer_class = ResumeSerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ["major", "skill"]  # Specify fields you want to search
+
+
+class ResumeRetrieveAPIView(generics.RetrieveAPIView):
+    queryset = Resume.objects.all()
+    serializer_class = ResumeSerializer
+
+    def get_object(self):
+        try:
+            return super().get_object()
+        except Http404:
+            raise Http404({"message": "Resume not found"})
+
+
+class ResumeCreateAPIView(generics.CreateAPIView):
+    queryset = Resume.objects.all()
+    serializer_class = ResumeCreateUpdateSerializer
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -24,9 +40,9 @@ class ResumeListCreateAPIView(generics.ListCreateAPIView):
         )
 
 
-class ResumeRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+class ResumeUpdateAPIView(generics.UpdateAPIView):
     queryset = Resume.objects.all()
-    serializer_class = ResumeSerializer
+    serializer_class = ResumeCreateUpdateSerializer
 
     def get_object(self):
         try:
@@ -53,6 +69,17 @@ class ResumeRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
         return Response(
             {"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
         )
+
+
+class ResumeDestroyAPIView(generics.DestroyAPIView):
+    queryset = Resume.objects.all()
+    serializer_class = ResumeCreateUpdateSerializer
+
+    def get_object(self):
+        try:
+            return super().get_object()
+        except Http404:
+            raise Http404({"message": "Resume not found"})
 
     def delete(self, request, *args, **kwargs):
         instance = self.get_object()

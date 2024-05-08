@@ -14,6 +14,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("user/", include("users.urls")),
     path("resume/", include("resume.urls")),
+    path("company/", include("company.urls")),
     path("", include_docs_urls(title="Human-Resource APIs") ),
     path(
         "schema",
