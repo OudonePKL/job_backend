@@ -7,7 +7,6 @@ urlpatterns = [
     path("orders/", views.OrderList.as_view(), name='orders-list'),
     path("order/create/", views.OrderCreate.as_view(), name='order-create'),
     path("order/detail/<int:pk>/", views.OrderDetail.as_view(), name='order-detail'),
-    # path("order/update/<int:pk>/", views.OrderUpdate.as_view(), name='order-update'), # not yet
     path("order/delete/<int:pk>/", views.OrderDelete.as_view(), name='order-delete'),
     
 ]

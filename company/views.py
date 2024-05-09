@@ -17,6 +17,9 @@ class OrderList(generics.ListAPIView):
 
 
 class OrderCreate(generics.CreateAPIView):
+    queryset = Order.objects.all()
+    serializer_class = OrderSerializer
+    
     def post(self, request):
         serializer = OrderCreateSerializer(data=request.data)
         if serializer.is_valid():
@@ -34,24 +37,6 @@ class OrderDetail(generics.RetrieveAPIView):
             return super().get_object()
         except Http404:
             raise Http404({"message": "Order not found"})
-
-
-# class OrderUpdate(generics.UpdateAPIView):
-#     def put(self, request, pk):
-#         try:
-#             order = Order.objects.get(pk=pk)
-#         except Order.DoesNotExist:
-#             return Response(
-#                 {"error": "Order not found"}, status=status.HTTP_404_NOT_FOUND
-#             )
-#         serializer = OrderUpdateSerializer(order, data=request.data)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(
-#                 {"message": "Order updated successfully."}, status=status.HTTP_200_OK
-#             )
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 
 class OrderDelete(generics.DestroyAPIView):

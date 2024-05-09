@@ -60,15 +60,4 @@ class OrderCreateSerializer(serializers.ModelSerializer):
         fields = ["company", "items"]
         
 
-# class OrderUpdateSerializer(serializers.ModelSerializer):
-#     def update(self, instance, validated_data):
-#         # Update order fields
-#         instance.status = validated_data.get("status", instance.status)
-#         instance.save()
-
-#         return instance
-
-#     class Meta:
-#         model = Order
-#         fields = ["company"]
         
