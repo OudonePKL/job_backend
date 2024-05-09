@@ -1,16 +1,72 @@
 from django.shortcuts import render
 from rest_framework import generics, status, filters
-from .models import Company, CompanyRequest
-from .serializers import CompanySerializer, CompanyRequestSerializer
+from .models import Company, Order, OrderItem
+from .serializers import CompanySerializer, OrderSerializer, OrderCreateSerializer
+from rest_framework.response import Response
+from django.http import Http404
 
 
 class CompanyList(generics.ListAPIView):
     queryset = Company.objects.all()
     serializer_class = CompanySerializer
-    
 
-class CompanyRequestList(generics.ListAPIView):
-    queryset = CompanyRequest.objects.all()
-    serializer_class = CompanyRequestSerializer
-    
-        
+
+class OrderList(generics.ListAPIView):
+    queryset = Order.objects.all()
+    serializer_class = OrderSerializer
+
+
+class OrderCreate(generics.CreateAPIView):
+    def post(self, request):
+        serializer = OrderCreateSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "success"}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class OrderDetail(generics.RetrieveAPIView):
+    queryset = Order.objects.all()
+    serializer_class = OrderSerializer
+
+    def get_object(self):
+        try:
+            return super().get_object()
+        except Http404:
+            raise Http404({"message": "Order not found"})
+
+
+# class OrderUpdate(generics.UpdateAPIView):
+#     def put(self, request, pk):
+#         try:
+#             order = Order.objects.get(pk=pk)
+#         except Order.DoesNotExist:
+#             return Response(
+#                 {"error": "Order not found"}, status=status.HTTP_404_NOT_FOUND
+#             )
+#         serializer = OrderUpdateSerializer(order, data=request.data)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(
+#                 {"message": "Order updated successfully."}, status=status.HTTP_200_OK
+#             )
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+class OrderDelete(generics.DestroyAPIView):
+    queryset = Order.objects.all()
+    serializer_class = OrderSerializer
+
+    def get_object(self):
+        try:
+            return super().get_object()
+        except Http404:
+            raise Http404({"message": "Order not found"})
+
+    def delete(self, request, *args, **wkargs):
+        instance = self.get_object()
+        instance.delete()
+        return Response(
+            {"message": "Order deleted successfully."}, status=status.HTTP_200_OK
+        )

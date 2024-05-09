@@ -1,10 +1,11 @@
 from django.contrib import admin
-from .models import Company, CompanyRequest
+from .models import Company, Order, OrderItem
 
 
 @admin.register(Company)
 class CompanyAdmin(admin.ModelAdmin):
     list_display = (
+        "id",
         "name",
         "user",
         "address",
@@ -14,14 +15,5 @@ class CompanyAdmin(admin.ModelAdmin):
         "user",
     )
     
-
-@admin.register(CompanyRequest)
-class CompanyRequestAdmin(admin.ModelAdmin):
-    list_display = (
-        "company",
-        "resume",
-    )
-    search_fields = (
-        "company",
-        "resume",
-    )
+admin.site.register(Order)
+admin.site.register(OrderItem)

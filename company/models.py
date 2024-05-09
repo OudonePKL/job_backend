@@ -20,11 +20,18 @@ class Company(models.Model):
     def __str__(self):
         return self.name
 
-class CompanyRequest(models.Model):
+class Order(models.Model):
     company = models.ForeignKey(Company, models.CASCADE, verbose_name="Company")
-    resume = models.ForeignKey(Resume, models.PROTECT, verbose_name="Resume")
     created_at = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
-        return self.company.name
+        return f"ID: {self.id} - Company: {self.company.name}"
+
+
+class OrderItem(models.Model):
+    order = models.ForeignKey(Order, on_delete=models.CASCADE)
+    resume = models.ForeignKey(Resume, models.PROTECT, verbose_name="Resume")
+    
+    def __str__(self):
+        return f"ID: {self.id} - Company: {self.order.company.name} - Resume: {self.resume.name}"
     

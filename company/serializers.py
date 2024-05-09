@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Company, CompanyRequest
+from .models import Company, Order, OrderItem
 from users.serializers import UserSerializer
 from resume.serializers import ResumeSerializer
 
@@ -18,10 +18,57 @@ class CompanySerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class CompanyRequestSerializer(serializers.ModelSerializer):
-    company = CompanySerializer()
+class OrderItemSerializer(serializers.ModelSerializer):
     resume = ResumeSerializer()
 
     class Meta:
-        model = CompanyRequest
+        model = OrderItem
         fields = "__all__"
+        
+class OrderItemCreateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = OrderItem
+        fields = ["resume",]
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    items = serializers.SerializerMethodField()
+
+    def get_items(self, obj):
+        order_items = OrderItem.objects.filter(order=obj)
+        serializer = OrderItemSerializer(order_items, many=True)
+        return serializer.data
+
+    class Meta:
+        model = Order
+        fields = ["id", "company", "items", "created_at"]
+        
+        
+class OrderCreateSerializer(serializers.ModelSerializer):
+    items = OrderItemCreateSerializer(many=True, write_only=True)
+
+    def create(self, validated_data):
+        order_items_data = validated_data.pop("items")
+        order = Order.objects.create(**validated_data)
+        for order_item_data in order_items_data:
+            OrderItem.objects.create(order=order, **order_item_data)
+        return order
+    
+    class Meta:
+        model = Order
+        fields = ["company", "items"]
+        
+
+# class OrderUpdateSerializer(serializers.ModelSerializer):
+#     def update(self, instance, validated_data):
+#         # Update order fields
+#         instance.status = validated_data.get("status", instance.status)
+#         instance.save()
+
+#         return instance
+
+#     class Meta:
+#         model = Order
+#         fields = ["company"]
+        
