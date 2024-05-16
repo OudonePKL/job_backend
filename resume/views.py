@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from django.http import Http404
 from .models import Resume
 from .serializers import ResumeSerializer, ResumeCreateUpdateSerializer
+from django.shortcuts import get_object_or_404
 
 
 class ResumeListAPIView(generics.ListAPIView):
@@ -21,6 +22,21 @@ class ResumeRetrieveAPIView(generics.RetrieveAPIView):
             return super().get_object()
         except Http404:
             raise Http404({"message": "Resume not found"})
+        
+
+class ResumeByUserView(generics.RetrieveAPIView):
+    serializer_class = ResumeSerializer
+
+    def get(self, request, user_id, *args, **kwargs):
+        try:
+            resume = get_object_or_404(Resume, user_id=user_id)
+            serializer = self.get_serializer(resume)
+            return Response(serializer.data)
+        except Http404:
+            return Response(
+                {"detail": "No resume found for this user."},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
 
 class ResumeCreateAPIView(generics.CreateAPIView):
