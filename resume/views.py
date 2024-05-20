@@ -22,7 +22,7 @@ class ResumeRetrieveAPIView(generics.RetrieveAPIView):
             return super().get_object()
         except Http404:
             raise Http404({"message": "Resume not found"})
-        
+
 
 class ResumeByUserView(generics.RetrieveAPIView):
     serializer_class = ResumeSerializer
@@ -31,11 +31,11 @@ class ResumeByUserView(generics.RetrieveAPIView):
         try:
             resume = get_object_or_404(Resume, user_id=user_id)
             serializer = self.get_serializer(resume)
-            return Response(serializer.data)
+            return Response({"message": "success", "data": serializer.data}, status=status.HTTP_200_OK)
         except Http404:
             return Response(
-                {"detail": "No resume found for this user."},
-                status=status.HTTP_404_NOT_FOUND
+                {"message": "No resume found for this user."},
+                status=status.HTTP_404_NOT_FOUND,
             )
 
 
