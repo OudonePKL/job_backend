@@ -31,7 +31,11 @@ class ResumeByUserView(generics.RetrieveAPIView):
         try:
             resume = get_object_or_404(Resume, user_id=user_id)
             serializer = self.get_serializer(resume)
-            return Response({"message": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+
+            return Response(
+                {"message": "success", "data": serializer.data},
+                status=status.HTTP_200_OK,
+            )
         except Http404:
             return Response(
                 {"message": "No resume found for this user."},
@@ -48,7 +52,7 @@ class ResumeCreateAPIView(generics.CreateAPIView):
         if serializer.is_valid():
             serializer.save()
             return Response(
-                {"message": "Resume created successfully."},
+                {"message": "success", "data": serializer.data},
                 status=status.HTTP_201_CREATED,
             )
         return Response(
@@ -71,7 +75,10 @@ class ResumeUpdateAPIView(generics.UpdateAPIView):
         serializer = self.get_serializer(instance, data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response({"message": "Resume updated successfully."})
+            return Response(
+                {"message": "success", "data": serializer.data},
+                status=status.HTTP_200_OK,
+            )
         return Response(
             {"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
         )
@@ -81,7 +88,10 @@ class ResumeUpdateAPIView(generics.UpdateAPIView):
         serializer = self.get_serializer(instance, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            return Response({"message": "Resume updated partially."})
+            return Response(
+                {"message": "success", "data": serializer.data},
+                status=status.HTTP_200_OK,
+            )
         return Response(
             {"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
         )
@@ -100,6 +110,4 @@ class ResumeDestroyAPIView(generics.DestroyAPIView):
     def delete(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.delete()
-        return Response(
-            {"message": "Resume deleted successfully."}, status=status.HTTP_200_OK
-        )
+        return Response({"message": "success"}, status=status.HTTP_200_OK)

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Company, Order, OrderItem
+from .models import Company, Order, OrderItem, WebInfo
 from users.serializers import UserSerializer
 from resume.serializers import ResumeSerializer
 
@@ -24,12 +24,15 @@ class OrderItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderItem
         fields = "__all__"
-        
+
+
 class OrderItemCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OrderItem
-        fields = ["resume",]
+        fields = [
+            "resume",
+        ]
 
 
 class OrderSerializer(serializers.ModelSerializer):
@@ -43,8 +46,8 @@ class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = ["id", "company", "description", "items", "status", "created_at"]
-        
-        
+
+
 class OrderCreateSerializer(serializers.ModelSerializer):
     items = OrderItemCreateSerializer(many=True, write_only=True)
 
@@ -54,10 +57,14 @@ class OrderCreateSerializer(serializers.ModelSerializer):
         for order_item_data in order_items_data:
             OrderItem.objects.create(order=order, **order_item_data)
         return order
-    
+
     class Meta:
         model = Order
         fields = ["company", "description", "items"]
-        
 
-        
+
+class WebInfoSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = WebInfo
+        fields = "__all__"

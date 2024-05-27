@@ -45,3 +45,22 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"ID: {self.id} - Company: {self.order.company.name} - Resume: {self.resume.name}"
+
+
+class WebInfo(models.Model):
+    company_pdf = models.FileField(
+        verbose_name="Company PDF", 
+        blank=True, 
+        null=True, 
+        upload_to="webinfo/company",
+    )
+    employee_pdf = models.FileField(
+        verbose_name="Employee PDF", 
+        blank=True, 
+        null=True, 
+        upload_to="webinfo/employee",
+    )
+    
+    def __str__(self):
+        return f"ID: {self.id} - Company: {self.company_pdf} - Employee: {self.employee_pdf}"
+    

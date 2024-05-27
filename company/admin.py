@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Company, Order, OrderItem
+from .models import Company, Order, OrderItem, WebInfo
 
 
 @admin.register(Company)
@@ -17,3 +17,4 @@ class CompanyAdmin(admin.ModelAdmin):
     
 admin.site.register(Order)
 admin.site.register(OrderItem)
+admin.site.register(WebInfo)
